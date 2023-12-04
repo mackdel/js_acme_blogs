@@ -108,16 +108,6 @@ const removeButtonListeners = () => {
     }
     return buttons; 
 };
-/*
-// Used to test createComments()
-const myCoolFunction = async () => { // arrow function
-    const response = await fetch("https://jsonplaceholder.typicode.com/posts/1/comments");
-        // tells code to wait to get results before doing next thing
-    const jsonCommentData = await response.json();
-        // awaiting a promise to resolve before get that data 
-        console.log(createComments(jsonCommentData));
-};
-*/
 
 // 8. Creates fragment that contains comments
 // Uses createElemWithText
@@ -171,7 +161,6 @@ const getUserPosts = async (userId) => {
     try {
         const response = await fetch(`https://jsonplaceholder.typicode.com/users/${userId}/posts`);
         const jsonPostData = await response.json();
-        console.log(jsonPostData);
         return jsonPostData;
     } catch (error) {
         console.error(`Fetching user posts data failed! ${error.stack}`);
@@ -184,7 +173,6 @@ const getUser = async (userId) => {
     try {
         const response = await fetch(`https://jsonplaceholder.typicode.com/users/${userId}`);
         const jsonUserData = await response.json();
-        console.log(jsonUserData);
         return jsonUserData;
     } catch (error) {
         console.error(`Fetching user data failed! ${error.stack}`);
@@ -197,16 +185,128 @@ const getPostComments = async (postId) => {
     try {
         const response = await fetch(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`);
         const jsonCommentData = await response.json();
-        console.log(jsonCommentData);
         return jsonCommentData;
     } catch (error) {
         console.error(`Fetching user data failed! ${error.stack}`);
     }
 };
 
+// 14. Creates section element with comment using postId for display
+// Uses getPostComments and createComments
+const displayComments = async (postId) => {
+    if (!postId) return postId; //return if no parameter recieved
 
-const toggleComments = (event, postId) => {
+    // create section element with postId and two classes
+    const section = document.createElement("section");
+    section.dataset.postId = postId;
+    section.classList.add("comments", "hide");
 
+    const comments = await getPostComments(postId); // fetches comment with given postId
+    const fragment = await createComments(comments); // creates comment fragment 
+
+    section.append(fragment); 
+    return section;
 };
 
+// 15. Creates posts
+// Uses createElemWithText(), getUser(), displayComments() 
+const createPosts = async (jsonPosts) => {
+    if (!jsonPosts) return undefined; //return if no parameter recieved
 
+    // creates fragment element
+    const fragment = document.createDocumentFragment();
+
+    // loop through posts 
+    for (post of jsonPosts){
+        const article = document.createElement("article");
+        const h2 = createElemWithText('h2', post.title);
+        const p1 = createElemWithText('p', post.body);
+        const p2 = createElemWithText('p', `Post ID: ${post.id}`);
+        const author = await getUser(post.userId);
+        const p3 = createElemWithText('p', `Author: ${author.name} with ${author.company.name}`);
+        const p4 = createElemWithText('p', author.company.catchPhrase);
+        const button = createElemWithText('button', "Show Comments");
+        button.dataset.postId = post.id
+
+        article.append(h2, p1, p2, p3, p4, button);
+
+        const section = await displayComments(post.id);
+        article.append(section);
+
+        fragment.append(article);
+    }
+    return fragment;
+};
+
+// 16. Creates element with posts to display
+// Uses createPosts and createElemWithText
+const displayPosts = async (jsonPosts) => {
+    const main = document.querySelector("main");
+
+    const element = (jsonPosts)
+        ? await createPosts(jsonPosts)
+        : createElemWithText('p', "Select an Employee to display their posts.", "default-text");
+
+    main.append(element);
+    return element;
+};
+
+// 17. 
+// Uses toggleCommentSection, toggleCommentButton
+const toggleComments = (event, postId) => {
+    if (!event || !postId) return undefined; // return if no event or postId
+    event.target.listener = true; // testing purposes
+
+    const section = toggleCommentSection(postId);
+    const comment = toggleCommentButton(postId);
+
+    return [section, comment];
+};
+
+// 18.
+// Uses removeButtonListeners, deleteChildElements, displayPosts, addButtonListeners
+const refreshPosts = async (jsonData) => {
+    if (!jsonData) return undefined; //return if no parameter recieved
+
+    const removeButtons = removeButtonListeners(); // buttons in main with event listeners removed
+    const main = deleteChildElements(document.querySelector('main')); // main element with no child elements
+    const fragment = await displayPosts(jsonData);
+    const addButtons = addButtonListeners(); // buttons with event listeners added 
+
+    return [removeButtons, main, fragment, addButtons];
+};
+
+// 19.
+// Uses getUserPosts, refreshPosts
+const selectMenuChangeEventHandler =  async (event) => {
+    if (!event) return undefined; //return if no change event
+
+    const selectMenu = event.target;
+    if (selectMenu) { event.target.disabled = true; }// diables select menu
+
+    const userId = selectMenu.value || 1; // 1 is fallback value
+    const posts = await getUserPosts(userId);
+    const refreshPostsArray = refreshPosts(posts);
+
+    if (selectMenu) { event.target.disabled = false; }// enables select menu    
+    return [userId, posts, refreshPostsArray];
+};
+
+// 20.
+// Uses populateSelectMenu
+const initPage = async () => {
+    users = await getUsers();
+    select = populateSelectMenu(users);
+    return [users, select];
+}
+
+// 21.
+// Uses initPage, selectMenuChangeEventHandler
+const initApp = () => {
+    initPage();
+    const select = document.getElementById("selectMenu");
+    console.log(select);
+    select.addEventListener("change", selectMenuChangeEventHandler, false);
+};
+
+document.addEventListener("DOMContentLoaded", initApp, false);
