@@ -284,9 +284,10 @@ const selectMenuChangeEventHandler =  async (event) => {
     const selectMenu = event.target;
     if (selectMenu) { event.target.disabled = true; }// diables select menu
 
-    const userId = selectMenu.value || 1; // 1 is fallback value
+    const userId = event?.target?.value || 1; // 1 is fallback value
     const posts = await getUserPosts(userId);
-    const refreshPostsArray = refreshPosts(posts);
+    const refreshPostsArray = await refreshPosts(posts);
+    console.log(refreshPostsArray);
 
     if (selectMenu) { event.target.disabled = false; }// enables select menu    
     return [userId, posts, refreshPostsArray];
@@ -304,8 +305,7 @@ const initPage = async () => {
 // Uses initPage, selectMenuChangeEventHandler
 const initApp = () => {
     initPage();
-    const select = document.getElementById("selectMenu");
-    console.log(select);
+    const select = document.querySelector("#selectMenu");
     select.addEventListener("change", selectMenuChangeEventHandler, false);
 };
 
